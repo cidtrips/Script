@@ -46,14 +46,3 @@ function half_dv_duration {
 	// return list with: first half of deltaV duration, last half of dV duration, mass after full burn.
 	return list(first_half_duration,second_half[0],second_half[1]).
 }
-
-function vis_viva {
-  parameter Alt.
-  parameter Body is ship:orbit:body.
-  parameter GM is Body:mu.
-  parameter Axis is ship:orbit:semimajoraxis.
-  
-  return sqrt( GM * (( 2 / (Body:radius + Alt) - ( 1 /  ) )
-  
-  
-}
