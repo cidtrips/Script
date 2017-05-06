@@ -1,0 +1,9 @@
+# Windows image file caches
+Thumbs.db
+ehthumbs.db
+
+# Compiled kOS Files
+*.km
+
+# Text Files
+*.txt
