@@ -7,3 +7,9 @@ ehthumbs.db
 
 # Text Files
 *.txt
+
+# Saved information
+json/
+
+# Boot Directory
+boot/
