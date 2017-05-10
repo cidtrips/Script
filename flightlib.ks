@@ -10,7 +10,7 @@ function CheckStage {
         SET numOut TO numOut + 1.
       }
     }
-    if numOut > 0 { wait 1. stage. wait .5. }.
+    if numOut > 0 { wait .5. stage. wait .5. }.
   }
 }
 
@@ -37,6 +37,54 @@ function CountDown {
   }
 }
 
+function Intercept {
+  lock d to target:velocity:orbit - velocity:orbit.
+  lock dv to d:mag.
+  lock n to -1 * target:direction:vector.
+  lock a to vectorangle (d, n).
+  lock r to 3 * (d:normalized - n:normalized) + d:normalized.
+  
+  lock steering to r.
+  set ao to a.
+  
+  until a > ao {
+    set tb to min(.001, d:mag * mass / (maxthrust * 2)).
+	set ti to target:distance / d:mag.
+    PrintIntercept(a, vectorangle(d, r), target:distance, ti, tb, (target:distance * sin(vectorangle(d, n)))). 
+	CheckStage.
+  }
+  lock timp to target:distance / min(0.001, d:mag).
+  lock t to (mass * dv) / (maxthrust * 1.9).
+  
+  until timp < t {
+    set u to vectorangle (d:normalized, n:normalized).
+	set m to u * 6.
+	if u > 9.2 {
+	  set m to (90 / u).
+	}
+	
+    set th to (vectorangle(d:normalized, n:normalized) - 1) / 4.
+    PrintIntercept(vectorangle(u, vectorangle(d:normalized, r), target:distance, timp, t, (target:distance * sin(u)))).	
+  }
+  
+}
+
+function PrintIntercept {
+  parameter angle.
+  parameter tAngle.
+  parameter distance.
+  parameter eta.
+  parameter burnTime.
+  parameter closestApproach.
+  
+  print "Angle:         " + round(angle, 3) at (0, 1).
+  print "Thrust Angle:  " + round(tAngle, 3) at (0, 2).
+  print "Distance:      " + round(distance) at (0, 3).
+  print "ETA:           " + round(eta) at (0, 4).
+  print "Burn Time:     " + round(burnTime) at (0, 5).
+  print "Closest Appr:  " + round(closestApproach) at (0, 6).
+}
+
 function GravityTurn {
   parameter direction is 90.
   parameter apTarget is 80000.
@@ -45,7 +93,7 @@ function GravityTurn {
   lock distance to body:radius + ship:altitude.
   lock weight to ship:mass * body:mu / (distance)^2.
   //lock throttle to (1.2 * weight) / ship:maxthrustat(ship:sensors:pres).
-  lock throttle to min(1, ship:mass * 2.5 * body:mu / (distance)^2 / ship:availablethrust).  
+    
   lock steering to mysteer.
 
   until ship:apoapsis > apTarget {
@@ -55,6 +103,7 @@ function GravityTurn {
     print (1.2 * weight) / ship:availablethrust at (0, 5).
 
     CheckStage.
+    lock throttle to min(1, ship:mass * 2.5 * body:mu / (distance)^2 / ship:availablethrust).
   }
   lock throttle to 0.
 }
@@ -113,7 +162,6 @@ function InsertOrbit {
 	} else {
 	  set th to 0.
 	}
-	CheckStage.
   }
   
   set Kp to 0.1.
@@ -128,13 +176,15 @@ function InsertOrbit {
   until insertAltitude - periapsis < 1 { 
     set th to PID:UPDATE(TIME:SECONDS, eta:apoapsis).
     wait 0.1.
-	CheckStage.
+    CheckStage.
   }
   
   set th to 0.
   
   unlock steering.
-  
+
+  if orbitAltitude = insertAltitude { unlock steering. unlock throttle. return. }
+
   wait until eta:periapsis < 60.
   
   lock steering to lookdirup(prograde:vector, ship:facing:topvector).
@@ -161,7 +211,6 @@ function CircularizeOrbit {
 function execNode {
   parameter nn is nextnode.
 
-  sas off.
   lock steering to lookdirup(nn:deltav, ship:facing:topvector). //points to node, keeping roll the same.
 
   local burn_stats is half_dv_duration(nn:deltav:mag).
@@ -182,6 +231,8 @@ function execNode {
 	   wait 0.
 	   kuniverse:timewarp:warpto(warp_target).
   }
+  lock steering to lookdirup(nn:deltav, ship:facing:topvector). //points to 
+  wait until vang(facing:vector, steering:vector) < 1. 
 
   wait until nn:eta - first_half_duration <= 0. //wait until we are close to executing the node
   set kuniverse:timewarp:mode to "physics". //se we can manually physics warp during a burn
@@ -312,6 +363,25 @@ function burn_duration {
   local burn_dur is (g0*ISP*m0/SHIP:AVAILABLETHRUST)*( 1 - e^(-delta_v_mag/(g0*ISP)) ).
 	
   return list(burn_dur,m1).
+}
+
+function WaitWindow {
+  parameter myTarget is target.
+  
+  local torb is 3*60.
+  
+  local pos is positionat( myTarget, time + torb).
+  
+  local upv is up:vector.
+  
+  clearscreen.
+  
+  until (vectorangle (pos, upv) < 15) and vectorangle (pos, upv) > 0 {
+    set pos to positionat( myTarget, time + torb).
+	set upv to up:vector.
+	
+	print vectorangle ( pos, upv) at (0, 3).
+  }
 }
 
 function simple_isp {
