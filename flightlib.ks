@@ -349,7 +349,7 @@ function burn_duration {
 
   local e is constant():e.
 	
-  local g0 is Mu() / ((ship:orbit:body:radius + ship:altitude) ^ 2). 
+  local g0 is body("Kerbin"):mu / body("Kerbin"):radius ^ 2. 
   
   // The ISP of first engine found active:
   // (For more accuracy with multiple differing engines,
