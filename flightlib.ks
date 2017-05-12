@@ -350,10 +350,7 @@ function burn_duration {
   local e is constant():e.
 	
   local g0 is body("Kerbin"):mu / body("Kerbin"):radius ^ 2. 
-  
-  // The ISP of first engine found active:
-  // (For more accuracy with multiple differing engines,
-  // some kind of weighted average would be needed.)
+
   local ISP is simple_isp().
 	
   // mass after burn is done
@@ -384,10 +381,33 @@ function WaitWindow {
   }
 }
 
+function mytwr {
+  declare local thrust is 0.
+  delcare local mass is ship:mass.
+  declare local g is ship:orbit:body:mu / (ship:orbit:body:radius + ship:altitude)^2.
+  
+  list engines in eng.
+  
+  for e in eng {
+    set thrust to thrust + e:availablethrust.
+  }
+  
+  return twr(thrust, mass, g).
+}
+
+function twr {
+  parameter thrust.
+  parameter mass.
+  parameter g.
+  
+  return thrust / (mass * g).
+}
+
 function simple_isp {
   list engines in engs.
   local totalFlow is 0.
   local totalThrust is 0.
+  list activeEngines.
   for eng in engs {
     if eng:ignition and not eng:flameout {
       set totalflow to totalflow + (eng:availablethrust / eng:isp).
